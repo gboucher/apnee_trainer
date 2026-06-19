@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Apnée Trainer</title>
+
+<style>
+body{
+  margin:0;
+  background:#020617;
+  color:white;
+  font-family:Arial,sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  padding:16px;
+  box-sizing:border-box;
+}
+
+.app{
+  width:100%;
+  max-width:520px;
+  background:#0f172a;
+  border-radius:24px;
+  padding:20px;
+  text-align:center;
+  box-sizing:border-box;
+}
+
+.buttons{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  justify-content:center;
+  margin-bottom:16px;
+}
+
+button{
+  border:none;
+  border-radius:14px;
+  padding:12px 16px;
+  background:#334155;
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+  font-size:16px;
+}
+
+button.active{
+  background:#22d3ee;
+  color:black;
+}
+
+.timer{
+  font-size:88px;
+  font-weight:bold;
+  margin:16px 0;
+  font-variant-numeric:tabular-nums;
+}
+
+.timer.chrono{
+  font-weight:700;
+}
+
+.phase{
+  font-size:28px;
+  color:#22d3ee;
+  margin-top:20px;
+}
+
+.sub{
+  color:#94a3b8;
+  margin-top:8px;
+  min-height:24px;
+  line-height:1.4;
+}
+
+input{
+  width:110px;
+  padding:10px;
+  border-radius:12px;
+  border:1px solid #334155;
+  background:#020617;
+  color:white;
+  font-size:20px;
+  text-align:center;
+}
+
+.controls{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:12px;
+  margin-top:20px;
+}
+
+.hidden{
+  display:none;
+}
+
+.setting{
+  margin-top:16px;
+}
+
+.fullscreen-timer{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:#020617;
+  color:white;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  box-sizing:border-box;
+}
+
+.fullscreen-timer.visible{
+  display:flex;
+}
+
+.fullscreen-content{
+  width:100vw;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:2vh;
+  padding:4vh 4vw;
+  box-sizing:border-box;
+}
+
+.fullscreen-phase{
+  font-size:clamp(32px,7vw,96px);
+  font-weight:bold;
+  color:#22d3ee;
+  line-height:1;
+}
+
+.fullscreen-time{
+  width:100%;
+  text-align:center;
+  font-size:clamp(120px,34vw,420px);
+  font-weight:900;
+  line-height:0.9;
+  letter-spacing:-0.08em;
+  font-variant-numeric:tabular-nums;
+}
+
+.fullscreen-sub{
+  font-size:clamp(18px,3vw,42px);
+  color:#94a3b8;
+  line-height:1.25;
+  max-width:92vw;
+}
+
+.fullscreen-content.chrono-mode{
+  gap:1.4vh;
+  padding:3vh 1.6vw 2.6vh;
+}
+
+.fullscreen-content.chrono-mode .fullscreen-phase{
+  font-size:clamp(24px,4vw,54px);
+}
+
+.fullscreen-content.chrono-mode .fullscreen-time{
+  font-size:min(30vw,34vh);
+  font-weight:700;
+  letter-spacing:-0.1em;
+}
+
+.fullscreen-content.chrono-mode .fullscreen-sub{
+  font-size:clamp(16px,2.4vw,28px);
+}
+
+.fullscreen-close{
+  position:fixed;
+  right:16px;
+  top:16px;
+  z-index:10000;
+  background:rgba(51,65,85,0.82);
+}
+
+@media (orientation:landscape){
+  .fullscreen-content{
+    padding:2vh 5vw;
+    gap:1vh;
+  }
+
+  .fullscreen-phase{
+    font-size:clamp(26px,6vh,70px);
+  }
+
+  .fullscreen-time{
+    font-size:clamp(120px,56vh,460px);
+  }
+
+  .fullscreen-sub{
+    font-size:clamp(16px,4vh,38px);
+  }
+
+  .fullscreen-content.chrono-mode{
+    padding:1.5vh 0.8vw 1.8vh;
+    gap:0.9vh;
+  }
+
+  .fullscreen-content.chrono-mode .fullscreen-phase{
+    font-size:clamp(22px,4.8vh,48px);
+  }
+
+  .fullscreen-content.chrono-mode .fullscreen-time{
+    font-size:min(36vw,80vh);
+    font-weight:700;
+    letter-spacing:-0.115em;
+  }
+
+  .fullscreen-content.chrono-mode .fullscreen-sub{
+    font-size:clamp(14px,2.8vh,24px);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<h1>Apnée Trainer</h1>
+
+<div class="buttons">
+<button id="squareBtn" class="active">Carrée</button>
+<button id="mixBtn">Mixte</button>
+<button id="co2Btn">CO₂</button>
+<button id="o2Btn">O₂</button>
+<button id="chronoBtn">Chrono</button>
+</div>
+
+<div id="squareSettings">
+  <div class="buttons">
+    <button class="dur active" data-v="5">5s</button>
+    <button class="dur" data-v="8">8s</button>
+    <button class="dur" data-v="10">10s</button>
+  </div>
+</div>
+
+<div id="baseSettings" class="hidden setting">
+  <input id="baseInput" type="number" value="30" min="5" step="5">
+  <div class="sub" id="baseLabel">
+    Temps d'apnée de départ
+  </div>
+</div>
+
+<div id="constantSettings" class="hidden setting">
+  <input id="constantInput" type="number" value="120" min="15" step="5">
+  <div class="sub" id="constantLabel">
+    Temps constant
+  </div>
+</div>
+
+<div class="phase" id="phase">Inspire</div>
+
+<div class="sub" id="sub">
+Respiration carrée
+</div>
+
+<div class="timer" id="timer">5</div>
+
+<div class="controls">
+<button id="startBtn" class="active">Start</button>
+<button id="resetBtn">Reset</button>
+<button id="fullscreenBtn">Plein écran</button>
+</div>
+
+<div class="sub">
+Bip léger à 10 secondes de la fin
+</div>
+
+</div>
+
+<div id="fullscreenTimer" class="fullscreen-timer" aria-hidden="true">
+  <button id="fullscreenCloseBtn" class="fullscreen-close">Quitter</button>
+  <div id="fullscreenContent" class="fullscreen-content">
+    <div id="fullscreenPhase" class="fullscreen-phase">Inspire</div>
+    <div id="fullscreenTime" class="fullscreen-time">5</div>
+    <div id="fullscreenSub" class="fullscreen-sub">Respiration carrée</div>
+  </div>
+</div>
+
+<script>
+const phaseEl = document.getElementById('phase');
+const subEl = document.getElementById('sub');
+const timerEl = document.getElementById('timer');
+
+const fullscreenTimerEl = document.getElementById('fullscreenTimer');
+const fullscreenContentEl = document.getElementById('fullscreenContent');
+const fullscreenPhaseEl = document.getElementById('fullscreenPhase');
+const fullscreenTimeEl = document.getElementById('fullscreenTime');
+const fullscreenSubEl = document.getElementById('fullscreenSub');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const fullscreenCloseBtn = document.getElementById('fullscreenCloseBtn');
+
+const squareSettings = document.getElementById('squareSettings');
+const baseSettings = document.getElementById('baseSettings');
+const constantSettings = document.getElementById('constantSettings');
+
+const baseLabel = document.getElementById('baseLabel');
+const constantLabel = document.getElementById('constantLabel');
+
+let mode = 'square';
+let running = false;
+let interval = null;
+let fullscreenActive = false;
+let wakeLock = null;
+
+let squareDuration = 5;
+let squareIndex = 0;
+
+let apneaDuration = 30;
+let apneaRecovery = 45;
+let apneaState = 'hold';
+
+let tableRound = 1;
+let tableState = 'hold';
+
+let timeLeft = 5;
+let chronoElapsed = 0;
+
+const squarePhases = [
+  'Inspire',
+  'Bloque',
+  'Expire',
+  'Bloque'
+];
+
+function formatChrono(totalSeconds){
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return String(minutes).padStart(2,'0') + ':' + String(seconds).padStart(2,'0');
+}
+
+function beep(freq=880,duration=0.2,volume=0.2){
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.frequency.value = freq;
+  gain.gain.value = volume;
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+  osc.stop(ctx.currentTime + duration);
+}
+
+function warningBeep(){
+  beep(520,0.1,0.08);
+}
+
+function render(){
+  let displayTime = String(timeLeft);
+
+  if(mode === 'square'){
+    phaseEl.textContent = squarePhases[squareIndex];
+    subEl.textContent = 'Respiration carrée';
+  }
+
+  if(mode === 'mix'){
+    phaseEl.textContent = apneaState === 'hold' ? 'Apnée' : 'Récup';
+    subEl.textContent = 'Mixte · Apnée ' + apneaDuration + 's · Récup ' + apneaRecovery + 's';
+  }
+
+  if(mode === 'co2'){
+    phaseEl.textContent = tableState === 'hold' ? 'Apnée' : 'Récup';
+    subEl.textContent = 'CO₂ · Série ' + tableRound;
+  }
+
+  if(mode === 'o2'){
+    phaseEl.textContent = tableState === 'hold' ? 'Apnée' : 'Récup';
+    subEl.textContent = 'O₂ · Série ' + tableRound;
+  }
+
+  if(mode === 'chrono'){
+    phaseEl.textContent = 'Chrono';
+    subEl.textContent = 'Chronomètre simple';
+    displayTime = formatChrono(chronoElapsed);
+  }
+
+  if(mode !== 'chrono'){
+    displayTime = String(timeLeft);
+  }
+
+  timerEl.textContent = displayTime;
+  timerEl.classList.toggle('chrono', mode === 'chrono');
+  fullscreenPhaseEl.textContent = phaseEl.textContent;
+  fullscreenTimeEl.textContent = displayTime;
+  fullscreenSubEl.textContent = subEl.textContent;
+  fullscreenContentEl.classList.toggle('chrono-mode', mode === 'chrono');
+}
+
+function resetProgram(){
+  clearInterval(interval);
+  running = false;
+
+  const base = parseInt(document.getElementById('baseInput').value, 10);
+
+  if(mode === 'square'){
+    squareIndex = 0;
+    timeLeft = squareDuration;
+  }
+
+  if(mode === 'mix'){
+    apneaDuration = base;
+    apneaRecovery = Math.round(apneaDuration * 1.5);
+    apneaState = 'hold';
+    timeLeft = apneaDuration;
+  }
+
+  if(mode === 'co2'){
+    apneaDuration = base;
+    tableRound = 1;
+    tableState = 'hold';
+    timeLeft = apneaDuration;
+  }
+
+  if(mode === 'o2'){
+    apneaDuration = base;
+    tableRound = 1;
+    tableState = 'hold';
+    timeLeft = apneaDuration;
+  }
+
+  if(mode === 'chrono'){
+    chronoElapsed = 0;
+    timeLeft = 0;
+  }
+
+  render();
+}
+
+function nextPhase(){
+  beep();
+
+  const constant = parseInt(document.getElementById('constantInput').value, 10);
+
+  if(mode === 'square'){
+    squareIndex = (squareIndex + 1) % 4;
+    timeLeft = squareDuration;
+  }
+  else if(mode === 'mix'){
+    if(apneaState === 'hold'){
+      apneaState = 'recovery';
+      timeLeft = apneaRecovery;
+    }else{
+      apneaState = 'hold';
+      apneaDuration += 15;
+      apneaRecovery = Math.round(apneaDuration * 1.5);
+      timeLeft = apneaDuration;
+    }
+  }
+  else if(mode === 'co2'){
+    if(tableState === 'hold'){
+      tableState = 'recovery';
+      timeLeft = Math.max(15, constant - ((tableRound - 1) * 15));
+    }else{
+      tableRound++;
+      tableState = 'hold';
+      timeLeft = apneaDuration;
+    }
+  }
+  else if(mode === 'o2'){
+    if(tableState === 'hold'){
+      tableState = 'recovery';
+      timeLeft = constant;
+    }else{
+      tableRound++;
+      tableState = 'hold';
+      timeLeft = apneaDuration + ((tableRound - 1) * 15);
+    }
+  }
+
+  render();
+}
+
+function tick(){
+  if(mode === 'chrono'){
+    chronoElapsed++;
+    render();
+    return;
+  }
+
+  timeLeft--;
+
+  if(timeLeft === 10){
+    warningBeep();
+  }
+
+  if(timeLeft <= 0){
+    nextPhase();
+    return;
+  }
+
+  render();
+}
+
+async function requestWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+
+  try{
+    wakeLock = await navigator.wakeLock.request('screen');
+  }catch(e){
+    wakeLock = null;
+  }
+}
+
+async function releaseWakeLock(){
+  if(!wakeLock) return;
+
+  try{
+    await wakeLock.release();
+  }catch(e){}
+
+  wakeLock = null;
+}
+
+async function enterFullscreenTimer(){
+  fullscreenActive = true;
+  fullscreenTimerEl.classList.add('visible');
+  fullscreenTimerEl.setAttribute('aria-hidden','false');
+  render();
+
+  if(fullscreenTimerEl.requestFullscreen){
+    try{
+      await fullscreenTimerEl.requestFullscreen();
+    }catch(e){}
+  }
+
+  requestWakeLock();
+}
+
+async function exitFullscreenTimer(){
+  fullscreenActive = false;
+  fullscreenTimerEl.classList.remove('visible');
+  fullscreenTimerEl.setAttribute('aria-hidden','true');
+
+  if(document.fullscreenElement){
+    try{
+      await document.exitFullscreen();
+    }catch(e){}
+  }
+
+  releaseWakeLock();
+}
+
+fullscreenBtn.onclick = enterFullscreenTimer;
+fullscreenCloseBtn.onclick = exitFullscreenTimer;
+
+fullscreenTimerEl.onclick = event => {
+  if(event.target === fullscreenTimerEl){
+    exitFullscreenTimer();
+  }
+};
+
+document.addEventListener('fullscreenchange', () => {
+  if(!document.fullscreenElement && fullscreenActive){
+    fullscreenActive = false;
+    fullscreenTimerEl.classList.remove('visible');
+    fullscreenTimerEl.setAttribute('aria-hidden','true');
+    releaseWakeLock();
+  }
+});
+
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && fullscreenActive){
+    requestWakeLock();
+  }
+});
+
+document.getElementById('startBtn').onclick = () => {
+  if(running){
+    clearInterval(interval);
+    running = false;
+    return;
+  }
+
+  beep();
+  running = true;
+  interval = setInterval(tick,1000);
+};
+
+document.getElementById('resetBtn').onclick = resetProgram;
+
+document.querySelectorAll('.dur').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.dur').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    squareDuration = parseInt(btn.dataset.v, 10);
+    resetProgram();
+  };
+});
+
+function setMode(newMode){
+  mode = newMode;
+
+  document.querySelectorAll('.buttons button').forEach(b => b.classList.remove('active'));
+
+  if(mode === 'square') document.getElementById('squareBtn').classList.add('active');
+  if(mode === 'mix') document.getElementById('mixBtn').classList.add('active');
+  if(mode === 'co2') document.getElementById('co2Btn').classList.add('active');
+  if(mode === 'o2') document.getElementById('o2Btn').classList.add('active');
+  if(mode === 'chrono') document.getElementById('chronoBtn').classList.add('active');
+
+  squareSettings.classList.toggle('hidden', mode !== 'square');
+  baseSettings.classList.toggle('hidden', mode === 'square' || mode === 'chrono');
+  constantSettings.classList.toggle('hidden', mode === 'square' || mode === 'mix' || mode === 'chrono');
+
+  if(mode === 'mix'){
+    document.getElementById('baseInput').value = 30;
+    baseLabel.textContent = "Temps d'apnée de départ";
+  }
+
+  if(mode === 'co2'){
+    document.getElementById('baseInput').value = 60;
+    baseLabel.textContent = "Temps d'apnée";
+    constantLabel.textContent = "Temps de récupération initial";
+  }
+
+  if(mode === 'o2'){
+    document.getElementById('baseInput').value = 60;
+    baseLabel.textContent = "Temps d'apnée initial";
+    constantLabel.textContent = "Temps de récupération fixe";
+  }
+
+  resetProgram();
+}
+
+document.getElementById('squareBtn').onclick = () => setMode('square');
+document.getElementById('mixBtn').onclick = () => setMode('mix');
+document.getElementById('co2Btn').onclick = () => setMode('co2');
+document.getElementById('o2Btn').onclick = () => setMode('o2');
+document.getElementById('chronoBtn').onclick = () => setMode('chrono');
+
+resetProgram();
+</script>
+
+</body>
+</html>
